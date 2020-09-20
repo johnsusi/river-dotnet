@@ -13,43 +13,14 @@ namespace River.Streaming
   {
     public static async IAsyncEnumerable<IGroupProducer<TKey, T>> GroupBy<TKey, T>(this IProducer<T> producer, Func<T, TKey> selector, ChannelOptions? options = null, [EnumeratorCancellation]CancellationToken cancellationToken = default)
     {
-      var consumer = new Consumer<T>();
-      producer.LinkTo(consumer, options);
-
+      var actor = new GroupByActor<TKey, T>(selector);
+      producer.LinkTo(actor.Inbox, options);
+      var consumer = new Consumer<IGroupProducer<TKey, T>>();
+      actor.Outbox.LinkTo(consumer);
+      actor.Start();
       using var reader = await consumer.GetReaderAsync(cancellationToken);
-      int index = 0;
-      var groups = new Dictionary<TKey, DisposableChannelWriter<T>>();
-
-      try
-      {
-        await foreach (var msg in reader.ReadAllAsync(cancellationToken))
-        {
-
-          var key = selector(msg);
-          if (!groups.TryGetValue(key, out var writer))
-          {
-            var groupProducer = new GroupProducer<TKey, T>(index, key);
-            yield return groupProducer;
-            writer = await groupProducer.GetWriterAsync(cancellationToken);
-            groups.Add(key, writer);
-          }
-
-          await writer.WriteAsync(msg, cancellationToken);
-
-        }
-      }
-      finally
-      {
-        foreach (var writer in groups.Values)
-        {
-          writer.Dispose();
-        }
-      }
-
-      // var actor = new GroupActor<TKey, T>(selector);
-      // producer.LinkTo(actor.Inbox);
-      // var _ = actor.ExecuteAsync();
-      // return actor.Outbox;
+      await foreach (var group in reader.ReadAllAsync(cancellationToken))
+        yield return group;
     }
 
 

@@ -7,7 +7,7 @@ using Xunit;
 namespace River.Streaming.Test
 {
 
-  public class BufferTest
+  public class BufferTest : UnitTest
   {
 
     [Fact]
@@ -31,31 +31,31 @@ namespace River.Streaming.Test
       Assert.Equal(expected, actual);
     }
 
-    [Fact]
-    public async Task Buffer_Should_Create_Lists_From_Streams()
+    [Theory]
+    [InlineData(1000, 1)]
+    [InlineData(1000, 9)]
+    [InlineData(1000, 10)]
+    [InlineData(1000, 1000)]
+    public async Task Buffer_Should_Create_Lists_From_Streams(int count, int windowSize)
     {
-      var expected = Enumerable.Range(1, 1000);
-      var producer = expected.AsProducer();
-      var consumer = new TestConsumer<IList<int>>();
+      var messages = Enumerable.Range(1, count);
+      var expected =
+        messages
+          .Select( (value, index) => (value, index))
+          .GroupBy( x => x.index / windowSize, x => x.value)
+          .Select(x => x.ToList());
 
-
-      producer
-        .Outbox
-        .Window(10)
-        .Buffer()
-        .LinkTo(consumer.Inbox);
-
-      await Task.WhenAll(producer, consumer);
+      var producer = messages.AsProducer();
 
       var actual =
-        consumer.Values
-          .SelectMany(x => x)
-          .OrderBy(x => x)
-          .ToList();
+        await producer
+          .Outbox
+          .Window(windowSize)
+          .Buffer()
+          .Concat()
+          .ToListAsync();
 
       Assert.Equal(expected, actual);
     }
-
-
   }
 }

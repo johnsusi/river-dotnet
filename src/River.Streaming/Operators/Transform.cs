@@ -9,18 +9,18 @@ namespace River.Streaming
 {
   public static partial class Operators
   {
-    public static IProducer<TOut> Transform<TIn, TOut>(this IProducer<TIn> producer, Func<TIn, TOut> transform)
+    public static IProducer<TOut> Transform<TIn, TOut>(this IProducer<TIn> producer, Func<TIn, TOut> transform, ChannelOptions? options = null)
     {
       var actor = new TransformActor<TIn, TOut>(x => new ValueTask<TOut>(transform(x)));
-      producer.LinkTo(actor.Inbox);
+      producer.LinkTo(actor.Inbox, options);
       actor.Start();
       return actor.Outbox;
     }
 
-    public static IProducer<TOut> Transform<TIn, TOut>(this IProducer<TIn> producer, Func<ChannelReader<TIn>, ChannelWriter<TOut>, CancellationToken, Task> transform)
+    public static IProducer<TOut> Transform<TIn, TOut>(this IProducer<TIn> producer, Func<ChannelReader<TIn>, ChannelWriter<TOut>, CancellationToken, Task> transform, ChannelOptions? options = null)
     {
       var actor = new TransformActor<TIn, TOut>(transform);
-      producer.LinkTo(actor.Inbox);
+      producer.LinkTo(actor.Inbox, options);
       actor.Start();
       return actor.Outbox;
     }

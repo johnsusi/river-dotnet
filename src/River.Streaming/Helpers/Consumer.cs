@@ -1,10 +1,12 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
 using River.Streaming;
 
+[assembly: InternalsVisibleTo("River.Streaming.Test")]
 namespace River.Streaming.Helpers
 {
   public class Consumer<T> : IConsumer<T>

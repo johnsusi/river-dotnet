@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Channels;
 
 namespace River.Streaming
@@ -13,7 +15,7 @@ namespace River.Streaming
         await foreach (var item in reader.ReadAllAsync(cancellationToken))
           result.Add(item);
         await writer.WriteAsync(result, cancellationToken);
-      });
+      }, options);
     }
 
     public static async IAsyncEnumerable<IProducer<IList<T>>> Buffer<T>(this IAsyncEnumerable<IProducer<T>> producers, ChannelOptions? options = null)

@@ -22,6 +22,7 @@ namespace River.Streaming.Test.Helpers
           if (barrier != null) await barrier.SignalAndWait();
         }
       };
+      Start();
     }
   }
 }

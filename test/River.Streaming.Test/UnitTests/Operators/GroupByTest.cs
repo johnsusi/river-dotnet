@@ -11,8 +11,29 @@ using Xunit;
 namespace River.Streaming.Test
 {
 
-  public class GroupByTest
+  public class GroupByTest : UnitTest
   {
+
+
+    [Fact]
+    public async Task GroupBy_Should_Partition_Stream()
+    {
+      var numbers = Enumerable.Range(1, 1000);
+      var expected = numbers.GroupBy(x => x % 2).Select(x => (IEnumerable<int>)x);
+      var producer = numbers.AsProducer();
+
+      var actual =
+        await
+          producer
+            .Outbox
+            .GroupBy(x => x % 2)
+            .Buffer()
+            .Merge()
+            .ToListAsync();
+
+      Assert.Equal(expected, actual.OrderBy(x => x[0]));
+
+    }
 
     [Fact]
     public async Task GroupBy_Merge_Will_Should_()
@@ -62,39 +83,6 @@ namespace River.Streaming.Test
       var actual = consumer.Values.OrderBy(x => x);
       Assert.Equal(expected, actual);
     }
-
-    // [Fact]
-    // public async Task GroupBy_Should_()
-    // {
-    //   static bool isEven(int x) => x % 2 == 0;
-    //   static bool isOdd(int x) => x % 2 != 0;
-
-    //   var expected = Enumerable.Range(1, 10);
-    //   var even = expected.Where(isEven);
-    //   var odd = expected.Where(isOdd);
-    //   var producer = expected.AsProducer();
-    //   var evenConsumer = new TestConsumer<int>();
-    //   var oddConsumer = new TestConsumer<int>();
-
-    //   producer
-    //     .Outbox
-    //     .GroupBy(isEven)
-    //     .Merge()
-    //     .Consume(g =>
-    //     {
-    //       var consumer = g.Key ? evenConsumer : oddConsumer;
-    //       g.LinkTo(consumer.Inbox);
-    //     });
-
-
-    //   await Task.WhenAll(
-    //     producer,
-    //     evenConsumer,
-    //     oddConsumer
-    //   );
-
-    //   Assert.Equal(even, evenConsumer.Values);
-    //   Assert.Equal(odd, oddConsumer.Values);;
-    // }
+    
   }
 }
