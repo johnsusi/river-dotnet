@@ -1,10 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
-using River.Streaming.Helpers;
 using River.Streaming.Test.Helpers;
 using Xunit;
 
@@ -20,7 +17,7 @@ namespace River.Streaming.Test
     {
       var numbers = Enumerable.Range(1, 1000);
       var expected = numbers.GroupBy(x => x % 2).Select(x => (IEnumerable<int>)x);
-      var producer = numbers.AsProducer();
+      using var producer = numbers.AsProducer();
 
       var actual =
         await
@@ -38,10 +35,10 @@ namespace River.Streaming.Test
     [Fact]
     public async Task GroupBy_Merge_Will_Should_()
     {
-      var timeout = new CancellationTokenSource();
       var expected = Enumerable.Range(1, 10);
-      var producer = expected.AsProducer();
-      var consumer = new TestConsumer<int>();
+      using var producer = expected.AsProducer();
+      using var consumer = new TestConsumer<int>();
+      using var timeout = new CancellationTokenSource();
 
       producer
         .Outbox
@@ -61,10 +58,9 @@ namespace River.Streaming.Test
     public async Task GroupBy_Merge_Will_Should_2()
     {
       var expected = Enumerable.Range(1, 10);
-      var producer = expected.AsProducer();
-      var consumer = new TestConsumer<int>();
-
-      var cancel = new CancellationTokenSource();
+      using var producer = expected.AsProducer();
+      using var consumer = new TestConsumer<int>();
+      using var cancel = new CancellationTokenSource();
 
       var tasks = new List<Task> {
         producer
@@ -83,6 +79,6 @@ namespace River.Streaming.Test
       var actual = consumer.Values.OrderBy(x => x);
       Assert.Equal(expected, actual);
     }
-    
+
   }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using River.Streaming.Helpers;
@@ -19,18 +20,21 @@ namespace River.Streaming.Test.UnitTests.Helpers
       producer.LinkTo(consumer);
       await task;
       Assert.True(task.IsCompletedSuccessfully);
-    
+
     }
 
     [Fact]
     public async Task Consumer_GetReaderAsync_ShouldCancel()
     {
-
-      var consumer = new Consumer<object>();
-      var cancel = new CancellationTokenSource();
+      using var cancel = new CancellationTokenSource();
       cancel.Cancel();
+      var consumer = new Consumer<object>();
       var task = consumer.GetReaderAsync(cancel.Token);
-      await task;
+      if (!task.IsCompleted)
+      {
+        try { await task; }
+        catch(OperationCanceledException) {}
+      }
       Assert.True(task.IsCanceled);
     }
 

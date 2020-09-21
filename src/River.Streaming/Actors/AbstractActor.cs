@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 namespace River.Streaming.Actors
 {
 
-  public abstract class AbstractActor : IActor
+  public abstract class AbstractActor : IActor, IDisposable
   {
     private Task? _completion;
     public Task Completion
@@ -35,6 +35,12 @@ namespace River.Streaming.Actors
     protected AbstractActor() {}
 
     protected abstract Task ExecuteAsync(CancellationToken cancellationToken = default);
+
+    public void Dispose()
+    {
+      _cancel.Dispose();
+    }
+
     public static implicit operator Task(AbstractActor actor) => actor.Completion;
 
   }

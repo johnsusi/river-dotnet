@@ -17,8 +17,13 @@ namespace River.Streaming.Helpers
 
     public async Task<DisposableChannelReader<T>> GetReaderAsync(CancellationToken cancellationToken = default)
     {
-      var result = await _source.Task;
-      return result.Reader as DisposableChannelReader<T> ?? throw new Exception("Reader is null");
+      return await Task.Run(async () =>
+      {
+        var result = await _source.Task;
+        if (result.Reader is DisposableChannelReader<T> reader) return reader;
+        throw new Exception("Not an instant of DisposableChannelReader");
+      }, cancellationToken);
+
     }
 
   }

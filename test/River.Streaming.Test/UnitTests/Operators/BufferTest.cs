@@ -14,8 +14,8 @@ namespace River.Streaming.Test
     public async Task Buffer_Should_Create_List_From_Stream()
     {
       var expected = Enumerable.Range(1, 1000);
-      var producer = expected.AsProducer();
-      var consumer = new TestConsumer<IList<int>>();
+      using var producer = expected.AsProducer();
+      using var consumer = new TestConsumer<IList<int>>();
 
       producer
         .Outbox
@@ -45,7 +45,7 @@ namespace River.Streaming.Test
           .GroupBy( x => x.index / windowSize, x => x.value)
           .Select(x => x.ToList());
 
-      var producer = messages.AsProducer();
+      using var producer = messages.AsProducer();
 
       var actual =
         await producer

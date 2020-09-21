@@ -1,17 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using River.Streaming.Actors;
-using River.Streaming.Helpers;
 using River.Streaming.Test.Helpers;
 using Xunit;
 
 namespace River.Streaming.Test.Actors
 {
-
 
   internal class NotImplementedAbstractActor : AbstractActor
   {
@@ -34,7 +29,7 @@ namespace River.Streaming.Test.Actors
     [Fact]
     public void AbstractActor_CancelAsync_Should_Complete_If_Not_Started()
     {
-      var actor = new NotImplementedAbstractActor();
+      using var actor = new NotImplementedAbstractActor();
       var task = actor.CancelAsync();
       Assert.True(task.IsCompletedSuccessfully);
     }
@@ -42,10 +37,10 @@ namespace River.Streaming.Test.Actors
     [Fact]
     public async Task AbstractActor_CancelAsync_Should_Complete_With_Cancel_Exception()
     {
-      var actor = new InfiniteAbstractActor();
-      actor.Start();
-      var cancel = new CancellationTokenSource();
+      using var cancel = new CancellationTokenSource();
       cancel.Cancel();
+      using var actor = new InfiniteAbstractActor();
+      actor.Start();
       await Assert.ThrowsAsync<TaskCanceledException>(async () => await actor.CancelAsync(cancel.Token));
     }
 

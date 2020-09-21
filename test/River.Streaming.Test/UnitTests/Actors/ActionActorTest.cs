@@ -1,20 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using River.Streaming.Actors;
-using River.Streaming.Helpers;
 using River.Streaming.Test.Helpers;
 using Xunit;
 
 namespace River.Streaming.Test.Actors
 {
 
-
-
-  public class ActionActorTest
+  public class ActionActorTest : UnitTest
   {
     internal class ExpectedException : Exception {}
 
