@@ -54,6 +54,5 @@ namespace River.Streaming.Test
       var actual = consumer.Values.Select(int.Parse);
       Assert.Equal(expected, actual);
     }
-
   }
 }

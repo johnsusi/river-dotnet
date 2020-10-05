@@ -11,17 +11,24 @@ namespace River.Streaming
   public static partial class Operators
   {
 
-    public static async IAsyncEnumerable<IWindowProducer<T>> Window<T>(this IProducer<T> producer, int size = int.MaxValue, TimeSpan? duration = null, ChannelOptions? options = null, [EnumeratorCancellation]CancellationToken cancellationToken = default)
+    public static async IAsyncEnumerable<WindowProducer<T>> Window<T>(this Producer<T> producer, int size = int.MaxValue, TimeSpan? duration = null, ChannelOptions? options = null, [EnumeratorCancellation]CancellationToken cancellationToken = default)
     {
-      var actor = new WindowActor<T>(size, duration);
+      using var actor = new WindowActor<T>(size, duration);
       producer.LinkTo(actor.Inbox, options);
-      var consumer = new Consumer<IWindowProducer<T>>();
+      using var consumer = new Consumer<WindowProducer<T>>();
       actor.Outbox.LinkTo(consumer);
-      using var reader = await consumer.GetReaderAsync();
       actor.Start();
-      await foreach (var window in reader.ReadAllAsync(cancellationToken))
+      await foreach (var window in consumer.ReadAllAsync(cancellationToken))
         yield return window;
       await actor;
     }
+
+    public static async IAsyncEnumerable<WindowProducer<T>> Window<T>(this IAsyncEnumerable<Producer<T>> producers, int size = int.MaxValue, TimeSpan? duration = null, ChannelOptions? options = null, [EnumeratorCancellation]CancellationToken cancellationToken = default)
+    {
+      await foreach (var producer in producers)
+        await foreach (var window in producer.Window(size, duration, options, cancellationToken))
+          yield return window;
+    }
+
   }
 }

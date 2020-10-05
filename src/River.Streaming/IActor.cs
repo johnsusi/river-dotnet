@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -9,10 +8,5 @@ namespace River.Streaming
     Task Completion { get; }
     void Start();
     Task CancelAsync(CancellationToken cancellationToken = default);
-
   }
-
-
-
-
 }

@@ -12,9 +12,9 @@ namespace River.Streaming.Test.Helpers
 
     internal static TestProducer<T> AsProducer<T>(this IEnumerable<T> data, AsyncBarrier barrier = null) => new TestProducer<T>(data, barrier);
 
-    internal static async IAsyncEnumerable<IProducer<T>> CreateMany<T>(IEnumerable<T> data, int count, AsyncBarrier barrier = null)
+    internal static async IAsyncEnumerable<Producer<T>> CreateMany<T>(IEnumerable<T> data, int count, AsyncBarrier barrier = null)
     {
-      for (int i = 0;i < count;++i)
+      for (int i = 0; i < count; ++i)
       {
         yield return data.AsProducer(barrier).Outbox;
         await Task.Delay(0);
@@ -25,17 +25,20 @@ namespace River.Streaming.Test.Helpers
 
   internal class TestProducer<T> : ActionActor
   {
-    public IProducer<T> Outbox { get; } = new Producer<T>();
+    public Producer<T> Outbox { get; } = new Producer<T>();
     internal TestProducer(IEnumerable<T> items, AsyncBarrier barrier = null)
     {
       Action = async cancellationToken =>
       {
-        using var writer = await Outbox.GetWriterAsync(cancellationToken);
-        foreach (var item in items)
+        using (Outbox)
         {
-          cancellationToken.ThrowIfCancellationRequested();
-          await writer.WriteAsync(item, cancellationToken);
-          if (barrier != null) await barrier.SignalAndWait();
+          await Outbox.WaitToWriteAsync(cancellationToken);
+          foreach (var item in items)
+          {
+            cancellationToken.ThrowIfCancellationRequested();
+            await Outbox.WriteAsync(item, cancellationToken);
+            if (barrier != null) await barrier.SignalAndWait();
+          }
         }
       };
       Start();

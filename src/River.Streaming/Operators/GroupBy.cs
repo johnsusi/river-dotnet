@@ -11,28 +11,27 @@ namespace River.Streaming
 {
   public static partial class Operators
   {
-    public static async IAsyncEnumerable<IGroupProducer<TKey, T>> GroupBy<TKey, T>(this IProducer<T> producer, Func<T, TKey> selector, ChannelOptions? options = null, [EnumeratorCancellation]CancellationToken cancellationToken = default)
+    public static async IAsyncEnumerable<GroupProducer<TKey, T>> GroupBy<TKey, T>(this Producer<T> producer, Func<T, TKey> selector, ChannelOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
       var actor = new GroupByActor<TKey, T>(selector);
       producer.LinkTo(actor.Inbox, options);
-      var consumer = new Consumer<IGroupProducer<TKey, T>>();
+      var consumer = new Consumer<GroupProducer<TKey, T>>();
       actor.Outbox.LinkTo(consumer);
       actor.Start();
-      using var reader = await consumer.GetReaderAsync(cancellationToken);
-      await foreach (var group in reader.ReadAllAsync(cancellationToken))
+      await foreach (var group in consumer.ReadAllAsync(cancellationToken))
         yield return group;
     }
 
 
-    public static async IAsyncEnumerable<IProducer<TOut>> GroupBy<TKey, TIn, TOut>(this IProducer<TIn> producer, Func<TIn, TKey> selector, Func<IGroupProducer<TKey, TIn>, IProducer<TOut>> builder)
+    public static async IAsyncEnumerable<Producer<TOut>> GroupBy<TKey, TIn, TOut>(this Producer<TIn> producer, Func<TIn, TKey> selector, Func<GroupProducer<TKey, TIn>, Producer<TOut>> builder, ChannelOptions? options = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-      await foreach (var group in GroupBy(producer, selector))
+      await foreach (var group in GroupBy(producer, selector, options, cancellationToken))
         yield return builder(group);
     }
 
-    public static async Task GroupBy<TKey, TIn>(this IProducer<TIn> producer, Func<TIn, TKey> selector, Action<IGroupProducer<TKey, TIn>> builder, ChannelOptions? options = null, CancellationToken cancellationToken = default)
+    public static async Task GroupBy<TKey, TIn>(this Producer<TIn> producer, Func<TIn, TKey> selector, Action<GroupProducer<TKey, TIn>> builder, ChannelOptions? options = null, CancellationToken cancellationToken = default)
     {
-      await foreach (var group in GroupBy(producer, selector))
+      await foreach (var group in GroupBy(producer, selector, options, cancellationToken))
         builder(group);
     }
   }

@@ -24,7 +24,7 @@ namespace River.Streaming.Test
           producer
             .Outbox
             .GroupBy(x => x % 2)
-            .Buffer()
+            .BufferMany()
             .Merge()
             .ToListAsync();
 
@@ -79,6 +79,7 @@ namespace River.Streaming.Test
       var actual = consumer.Values.OrderBy(x => x);
       Assert.Equal(expected, actual);
     }
+
 
   }
 }

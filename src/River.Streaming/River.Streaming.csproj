@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>River.Streaming</PackageId>
-    <Version>0.9.0</Version>
+    <Version>0.9.10</Version>
     <Authors>John Susi</Authors>
     <Summary>River.Streaming is a library for building concurrent applications in C#</Summary>
     <RepositoryUrl>https://github.com/johnsusi/river-dotnet/</RepositoryUrl>

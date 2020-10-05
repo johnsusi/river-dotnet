@@ -32,5 +32,42 @@ namespace River.Streaming.Test
 
       Assert.Equal(expected, actual);
     }
+
+   [Fact]
+    public async Task Concat_WithConcurrentProducers_ShouldLinkWhenProducerArrives()
+    {
+      var expected = new [] { 1, 2, 3};
+      var consumer = new Consumer<int>();
+      var producer1 = new Producer<int>();
+      var producer2 = new Producer<int>();
+      var barrier = new AsyncBarrier(2);
+      var producers = new []
+      {
+        producer1,
+        producer2,
+      }.ToAsyncEnumerable();
+
+      producers.Concat().LinkTo(consumer);
+
+      var actual = new List<int>();
+
+      await producer1.WriteAsync(1);
+      await producer2.WriteAsync(3);
+
+      actual.Add(await consumer.ReadAsync());
+      Assert.False(consumer.TryRead(out _));
+
+      await producer1.WriteAsync(2);
+
+      actual.Add(await consumer.ReadAsync());
+      Assert.False(consumer.TryRead(out _));
+
+      producer1.Dispose();
+      actual.Add(await consumer.ReadAsync());
+
+      producer2.Dispose();
+      consumer.Dispose();
+      Assert.Equal(expected, actual);
+    }
   }
 }

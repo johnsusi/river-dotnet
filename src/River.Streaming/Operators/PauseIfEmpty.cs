@@ -7,7 +7,7 @@ namespace River.Streaming
 {
   public static partial class Operators
   {
-    public static IProducer<T> PauseIfEmpty<T>(this IProducer<T> producer, TimeSpan pause, ChannelOptions? options = null)
+    public static Producer<T> PauseIfEmpty<T>(this Producer<T> producer, TimeSpan pause, ChannelOptions? options = null)
     {
       var actor = new TransformActor<T, T>( async (reader, writer, cancellationToken) =>
       {
@@ -19,7 +19,7 @@ namespace River.Streaming
           if (!await reader.WaitToReadAsync(cancellationToken)) break;
         }
       });
-
+      producer.LinkTo(actor.Inbox, options);
       return actor.Outbox;
     }
   }

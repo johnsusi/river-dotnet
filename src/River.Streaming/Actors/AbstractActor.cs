@@ -1,5 +1,4 @@
 using System;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,10 +24,10 @@ namespace River.Streaming.Actors
         _cancel.Cancel();
       }
       finally
-      {
-        var task = await Task.WhenAny(_completion, Task.Delay(Timeout.Infinite, cancellationToken));
-        if (task == _completion) await task;
-        else throw new Exception("Actor still running");
+      {        
+        var timeout = Task.Delay(Timeout.Infinite, cancellationToken);
+        await Task.WhenAny(_completion, timeout);
+        cancellationToken.ThrowIfCancellationRequested();
       }
     }
 
@@ -44,5 +43,4 @@ namespace River.Streaming.Actors
     public static implicit operator Task(AbstractActor actor) => actor.Completion;
 
   }
-
 }

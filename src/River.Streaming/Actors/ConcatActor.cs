@@ -1,23 +1,18 @@
-
-
-using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using River.Streaming.Helpers;
 
 namespace River.Streaming.Actors
 {
 
   internal class ConcatActor<T> : AbstractActor
   {
-    private readonly IAsyncEnumerable<IProducer<T>> _producers;
+    private readonly IAsyncEnumerable<Producer<T>> _producers;
     private readonly ChannelOptions? _options = null;
-    public IProducer<T> Outbox { get; } = new Producer<T>();
+    public Producer<T> Outbox { get; } = new Producer<T>();
 
-    public ConcatActor(IAsyncEnumerable<IProducer<T>> producers, ChannelOptions? options = null)
+    public ConcatActor(IAsyncEnumerable<Producer<T>> producers, ChannelOptions? options = null)
     {
       _producers = producers;
       _options = options;
@@ -25,16 +20,32 @@ namespace River.Streaming.Actors
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-      using var writer = await Outbox.GetWriterAsync(cancellationToken);
-
-      await foreach (var producer in _producers)
+      using (Outbox)
       {
-        var consumer = new Consumer<T>();
-        producer.LinkTo(consumer, _options);
-        using var reader = await consumer.GetReaderAsync(cancellationToken);
+        var channel = Channel.CreateUnbounded<Consumer<T>>();
+        var task = Write(channel, Outbox, cancellationToken);
+        try
+        {
+          await foreach (var producer in _producers)
+          {
+            var consumer = new Consumer<T>();
+            producer.LinkTo(consumer, _options);
+            await channel.Writer.WriteAsync(consumer, cancellationToken);
+          }
+        }
+        finally
+        {
+          channel.Writer.Complete();
+        }
+        await task;
+      }
+    }
+
+    private static async Task Write(ChannelReader<Consumer<T>> consumers, ChannelWriter<T> writer, CancellationToken cancellationToken)
+    {
+      await foreach (var reader in consumers.ReadAllAsync(cancellationToken))
         await foreach (var item in reader.ReadAllAsync(cancellationToken))
           await writer.WriteAsync(item, cancellationToken);
-      }
     }
   }
 }

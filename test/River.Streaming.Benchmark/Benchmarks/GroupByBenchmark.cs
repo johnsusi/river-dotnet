@@ -18,14 +18,14 @@ namespace River.Streaming.Benchmarks
   public class GroupByBenchmark
   {
 
-    [Params(1000000)]
+    [Params(1000_000)]
     public int Messages;
 
     [Params(1, 10, 100, 1000, 10_000, 100_000, 1000_000)]
     public int Groups;
 
-    private IConsumer<int> _consumer;
-    private IProducer<int> _producer;
+    private Consumer<int> _consumer;
+    private Producer<int> _producer;
 
     [GlobalSetup]
     public void Setup()
@@ -41,12 +41,10 @@ namespace River.Streaming.Benchmarks
     }
 
     [GlobalCleanup]
-    public async Task Cleanup()
+    public void Cleanup()
     {
-      var writer = await _producer.GetWriterAsync();
-      writer.Dispose();
-      var reader = await _consumer.GetReaderAsync();
-      reader.Dispose();
+      _producer.Dispose();
+      _consumer.Dispose();
     }
 
 
@@ -59,16 +57,14 @@ namespace River.Streaming.Benchmarks
 
       async Task read()
       {
-        var reader = await _consumer.GetReaderAsync();
         for (int i = 0;i < Messages; ++i)
-          await reader.ReadAsync();
+          await _consumer.ReadAsync();
       }
 
       async Task write()
       {
-        var writer = await _producer.GetWriterAsync();
         for (int i = 0; i < Messages; ++i)
-          await writer.WriteAsync(i);
+          await _producer.WriteAsync(i);
       }
     }
 
@@ -83,20 +79,15 @@ namespace River.Streaming.Benchmarks
 
       async Task read()
       {
-        var reader = await _consumer.GetReaderAsync();
         for (int i = 0;i < Messages; ++i)
-          await reader.ReadAsync();
+          await _consumer.ReadAsync();
       }
 
       async Task write()
       {
-        var writer = await _producer.GetWriterAsync();
         for (int i = 0; i < Messages; ++i)
-          await writer.WriteAsync(i);
+          await _producer.WriteAsync(i);
       }
     }
-
-
   }
-
 }

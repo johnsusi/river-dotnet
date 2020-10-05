@@ -36,7 +36,7 @@ namespace River.Streaming.Test
     [InlineData(1000, 9)]
     [InlineData(1000, 10)]
     [InlineData(1000, 1000)]
-    public async Task Buffer_Should_Create_Lists_From_Streams(int count, int windowSize)
+    public async Task BufferMany_Should_Create_Lists_From_Streams(int count, int windowSize)
     {
       var messages = Enumerable.Range(1, count);
       var expected =
@@ -51,7 +51,7 @@ namespace River.Streaming.Test
         await producer
           .Outbox
           .Window(windowSize)
-          .Buffer()
+          .BufferMany()
           .Concat()
           .ToListAsync();
 

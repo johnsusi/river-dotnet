@@ -1,13 +1,11 @@
-
 using System;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace River.Streaming.Actors
 {
 
-  public class ActionActor : AbstractActor
+    public class ActionActor : AbstractActor
   {
     private Func<CancellationToken, Task>? _action;
     public Func<CancellationToken, Task> Action

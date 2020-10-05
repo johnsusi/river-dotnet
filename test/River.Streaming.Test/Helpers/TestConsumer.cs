@@ -15,11 +15,13 @@ namespace River.Streaming.Test.Helpers
     {
       Action = async cancellationToken =>
       {
-        using var reader = await Inbox.GetReaderAsync(cancellationToken);
-        await foreach (var item in reader.ReadAllAsync(cancellationToken))
+        using (Inbox)
         {
-          Values.Add(item);
-          if (barrier != null) await barrier.SignalAndWait();
+          await foreach (var item in Inbox.ReadAllAsync(cancellationToken))
+          {
+            Values.Add(item);
+            if (barrier != null) await barrier.SignalAndWait();
+          }
         }
       };
       Start();

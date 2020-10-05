@@ -3,6 +3,9 @@
 build:
 	dotnet build
 
+clean:
+	rm -Rf nupkg/* src/River.Streaming/bin src/River.Streaming/obj test/River.Streaming.Test/bin test/River.Streaming.Test/obj
+
 nuget:
 	dotnet pack -o dist
 

@@ -28,8 +28,7 @@ namespace River.Streaming.Benchmarks
     {
       var channel = Channel.CreateUnbounded<int>();
 
-      var tasks = new List<Task>();
-      tasks.Add(write());
+      var tasks = new List<Task> { write() };
       for (int i = 0;i < Consumers;++i)
         tasks.Add(read());
 
@@ -81,7 +80,7 @@ namespace River.Streaming.Benchmarks
           await channel.Writer.WriteAsync(i);
       }
 
-      async Task read(TaskCompletionSource<Channel<int>> source)
+      static async Task read(TaskCompletionSource<Channel<int>> source)
       {
         var _channel = await source.Task;
         await _channel.Reader.ReadAsync();

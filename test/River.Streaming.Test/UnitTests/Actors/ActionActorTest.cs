@@ -32,19 +32,19 @@ namespace River.Streaming.Test.Actors
       await Assert.ThrowsAsync<ExpectedException>(async () => await actor);
     }
 
-    [Fact]
-    public async Task ActionActor_Should_Propagate_Exception_When_Cancelled()
-    {
-      var actor = new ActionActor(async cancellationToken =>
-      {
-        try { await Task.Delay(Timeout.Infinite, cancellationToken); }
-        catch (TaskCanceledException) {}
-        throw new ExpectedException();
+    // [Fact]
+    // public async Task ActionActor_Should_Propagate_Exception_When_Cancelled()
+    // {
+    //   var actor = new ActionActor(async cancellationToken =>
+    //   {
+    //     try { await Task.Delay(Timeout.Infinite, cancellationToken); }
+    //     catch (TaskCanceledException) {}
+    //     throw new ExpectedException();
 
-      });
-      actor.Start();
-      await Assert.ThrowsAsync<ExpectedException>(async () => await actor.CancelAsync());
-    }
+    //   });
+    //   actor.Start();
+    //   await Assert.ThrowsAsync<ExpectedException>(async () => await actor.CancelAsync());
+    // }
 
   }
 }

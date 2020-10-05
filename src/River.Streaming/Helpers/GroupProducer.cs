@@ -1,9 +1,6 @@
-using System.Threading;
-using System.Threading.Tasks;
-
 namespace River.Streaming.Helpers
 {
-  public class GroupProducer<TKey, T> : Producer<T>, IGroupProducer<TKey, T>
+  public class GroupProducer<TKey, T> : Producer<T>
   {
     public int Index { get; protected set; }
 

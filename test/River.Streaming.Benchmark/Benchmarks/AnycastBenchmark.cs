@@ -24,32 +24,29 @@ namespace River.Streaming.Benchmarks
     [Params(1, 10, 100, 1000, 10_000, 100_000, 1000_000)]
     public int Consumers;
 
-    private IProducer<int> _producer;
-    private List<IConsumer<int>> _consumers;
+    private Producer<int> _producer;
+    private List<Consumer<int>> _consumers;
 
     [GlobalSetup]
     public void Setup()
     {
       var options = new UnboundedChannelOptions();
       _producer = new Producer<int>();
-      _consumers = new List<IConsumer<int>>();
+      _consumers = new List<Consumer<int>>();
       for (int i = 0;i < Consumers;++i)
         _consumers.Add(new Consumer<int>());
 
       foreach (var consumer in _consumers)
         _producer.LinkTo(consumer, options);
-
     }
 
     [GlobalCleanup]
-    public async Task Cleanup()
+    public void Cleanup()
     {
-      var writer = await _producer.GetWriterAsync();
-      writer.Dispose();
+      _producer.Dispose();
       foreach (var consumer in _consumers)
       {
-        var reader = await consumer.GetReaderAsync();
-        reader.Dispose();
+        consumer.Dispose();
       }
     }
 
@@ -61,18 +58,16 @@ namespace River.Streaming.Benchmarks
 
       Task readAll() => Task.WhenAll(_consumers.Select(consumer => read(consumer, Messages / Consumers)));
 
-      async Task read(IConsumer<int> consumer, int readCount)
+      static async Task read(Consumer<int> consumer, int readCount)
       {
-        var reader = await consumer.GetReaderAsync();
         for (int i = 0;i < readCount;++i)
-          await reader.ReadAsync();
+          await consumer.ReadAsync();
       }
 
       async Task write()
       {
-        var writer = await _producer.GetWriterAsync();
         for (int i = 0;i < Messages;++i)
-          await writer.WriteAsync(i);
+          await _producer.WriteAsync(i);
       }
     }
 
@@ -87,18 +82,17 @@ namespace River.Streaming.Benchmarks
 
       Task readAll() => Task.WhenAll(_consumers.Select(consumer => read(consumer, Messages / Consumers)));
 
-      async Task read(IConsumer<int> consumer, int readCount)
+      static async Task read(Consumer<int> consumer, int readCount)
       {
-        var reader = await consumer.GetReaderAsync();
         for (int i = 0;i < readCount;++i)
-          await reader.ReadAsync();
+          await consumer.ReadAsync();
       }
 
       async Task write()
       {
-        var writer = await _producer.GetWriterAsync();
+        
         for (int i = 0;i < Messages;++i)
-          await writer.WriteAsync(i);
+          await _producer.WriteAsync(i);
       }
     }
   }

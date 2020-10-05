@@ -24,10 +24,27 @@ namespace River.Streaming.Test.Actors
     }
   }
 
+
+  internal class ThrowOnCancelAbstractActor : AbstractActor
+  {
+    internal class InternalException : Exception {}
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken = default)
+    {
+      try
+      {
+        await Task.Delay(Timeout.Infinite, cancellationToken);
+      }
+      catch (TaskCanceledException)
+      {
+        throw new InternalException();
+      }
+    }
+  }
+
   public class AbstractActorTest : UnitTest
   {
     [Fact]
-    public void AbstractActor_CancelAsync_Should_Complete_If_Not_Started()
+    public void CancelAsync_ShouldComplete()
     {
       using var actor = new NotImplementedAbstractActor();
       var task = actor.CancelAsync();
@@ -35,15 +52,14 @@ namespace River.Streaming.Test.Actors
     }
 
     [Fact]
-    public async Task AbstractActor_CancelAsync_Should_Complete_With_Cancel_Exception()
+    public async Task CancelAsync_ShouldThrowIfCancelled()
     {
       using var cancel = new CancellationTokenSource();
       cancel.Cancel();
       using var actor = new InfiniteAbstractActor();
       actor.Start();
-      await Assert.ThrowsAsync<TaskCanceledException>(async () => await actor.CancelAsync(cancel.Token));
+      await Assert.ThrowsAsync<OperationCanceledException>(async () => await actor.CancelAsync(cancel.Token));
     }
-
 
   }
 }

@@ -11,8 +11,8 @@ namespace River.Streaming.Actors
   {
     private readonly Func<T, TKey> _selector;
 
-    public IConsumer<T> Inbox { get; } = new Consumer<T>();
-    public IProducer<IGroupProducer<TKey, T>> Outbox { get; } = new Producer<IGroupProducer<TKey, T>>();
+    public Consumer<T> Inbox { get; } = new Consumer<T>();
+    public Producer<GroupProducer<TKey, T>> Outbox { get; } = new Producer<GroupProducer<TKey, T>>();
 
     public GroupByActor(Func<T, TKey> selector)
     {
@@ -22,27 +22,27 @@ namespace River.Streaming.Actors
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken = default)
     {
-      using var reader = await Inbox.GetReaderAsync(cancellationToken);
-      using var writer = await Outbox.GetWriterAsync(cancellationToken);
-
-      var groups = new Dictionary<TKey, DisposableChannelWriter<T>>();
-      await foreach (var item in reader.ReadAllAsync(cancellationToken))
+      using (Outbox)
+      using (Inbox)
       {
-        var key = _selector(item);
-        if (!groups.TryGetValue(key, out var groupWriter))
+
+        var groups = new Dictionary<TKey, GroupProducer<TKey, T>>();
+        await foreach (var item in Inbox.ReadAllAsync(cancellationToken))
         {
-          var producer = new GroupProducer<TKey, T>(groups.Count+1, key);
-          await writer.WriteAsync(producer, cancellationToken);
-          groupWriter = await producer.GetWriterAsync(cancellationToken);
-          groups.Add(key, groupWriter);
+          var key = _selector(item);
+          if (!groups.TryGetValue(key, out var producer))
+          {
+            producer = new GroupProducer<TKey, T>(groups.Count + 1, key);
+            await Outbox.WriteAsync(producer, cancellationToken);
+            groups.Add(key, producer);
+          }
+
+          await producer.WriteAsync(item, cancellationToken);
         }
 
-        await groupWriter.WriteAsync(item, cancellationToken);
+        foreach (var groupWriter in groups.Values)
+          groupWriter.Dispose();
       }
-
-      foreach (var groupWriter in groups.Values)
-        groupWriter.Dispose();
-
     }
   }
 }

@@ -8,19 +8,10 @@ namespace River.Streaming
 
   public static partial class Operators
   {
-
-    public static TConsumer Consume<T, TConsumer>(this IProducer<T> producer)
-      where TConsumer : IConsumer<T>, new()
-    {
-      var consumer = new TConsumer();
-      producer.LinkTo(consumer);
-      return consumer;
-    }
-
-    public static void Consume<T>(this IProducer<T> producer, Action<T> consumer, ChannelOptions? options = null)
+    public static Task Consume<T>(this Producer<T> producer, Action<T> consumer, ChannelOptions? options = null)
       => Consume(producer, t => { consumer(t); return new ValueTask(); }, options);
 
-    public static void Consume<T>(this IProducer<T> producer, Func<T, ValueTask> consumer, ChannelOptions? options = null)
+    public static Task Consume<T>(this Producer<T> producer, Func<T, ValueTask> consumer, ChannelOptions? options = null)
     {
       var actor = new ConsumerActor<T>(async (reader, ct) =>
       {
@@ -30,6 +21,7 @@ namespace River.Streaming
       });
       producer.LinkTo(actor.Inbox, options);
       actor.Start();
+      return actor.Completion;
     }
   }
 }

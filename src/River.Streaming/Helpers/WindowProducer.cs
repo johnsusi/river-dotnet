@@ -2,7 +2,7 @@ using System;
 
 namespace River.Streaming.Helpers
 {
-  public class WindowProducer<T> : Producer<T>, IWindowProducer<T>
+  public class WindowProducer<T> : Producer<T>
   {
     public int Index { get; private set; }
     public TimeSpan Duration { get; private set; }
