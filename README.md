@@ -15,20 +15,7 @@ An actor is the unit of concurrency.
   }
 ```
 
-Much like a real actor on stage, an Actor can be started (Action!), cancelled (Cut!) and completed (That's a wrap!).
-
-Actors model concurrency:
-
-```c#
-
-  class MinimalActor : AbstractActor
-  {
-    protected Task ExecuteAsync(CancellationToken cancellationToken)
-    {
-      cancellationToken.ThrowIfCancellationRequested();
-      return Task.CompletedTask;
-    }
-  }
+Much like a real actor on stage, an Actor can be started (Action!), cancelled (Cut!) and completed (That's a wrap!). Actors prepare, execute their role (behaviour) and communicate with other actors.
 
 ```
 
@@ -96,3 +83,51 @@ LinkTo is the basic operation that connects a producer with a consumer.
   }
 
 ```
+
+There are three ways for a producer to communicate with a consumer. 
+
+## Unicast
+
+Unicast is the simplest form of communication. A single producer links to a single consumer. 
+
+```c#
+producer.LinkTo(consumer);
+```
+
+## Anycast
+
+Anycast connects a single producer to multiple consumers. The communication will act as a worker queue. The first consumer that reads a message gets it. 
+
+```
+foreach (Var producer in producers)
+  producer.LinkTo(consumer);
+```
+
+## Multicast
+
+Multicast copies the same message to a set of consumers. 
+
+TBD
+
+## Merge
+
+TBD
+
+## ChannelOptions
+
+Most operations on producers accept an optional ChannelOptions that defines the behaviour of the communication.
+
+For instance, to skip messages when the consumer is slower than the producer, you can use `DropOldest`
+
+```c#
+
+var options = new BoundedChannelOptions(1) { FullMode = BoundedChannelFullMode.DropOldest };
+producer.LinkTo(consumer, options);
+
+```
+
+
+
+
+
+
