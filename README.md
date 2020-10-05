@@ -1,6 +1,6 @@
 # River.Streaming
 
-River.Streaming is a library for writing concurrent streaming applications. Concurrency is achieved using actors which consume and produce messages.
+River.Streaming is a library for writing hybrid dataflow applications. Concurrency is achieved using actors which consume and produce messages.
 
 ## Actor
 
@@ -34,52 +34,22 @@ Actors model concurrency:
 
 ## Producer
 
-```c#
-
 Producers produce messages. The actual implementation is based on channels.
 
-  public interface IProducer<T>
+```c#
+
+  public interface IProducer<T> : IDisposable
   {
-    Task<DisposableChannelWriter<T>> GetWriterAsync(CancellationToken cancellationToken = default);
+    bool TryWrite(T item);
+    ValueTask<bool> WaitToWriteAsync(CancellationToken cancellationToken = default);
+    bool TryComplete(Exception? error = null);
+    ValueTask WriteAsync(T item, CancellationToken cancellationToken = default);
   }
 
 ```
 
-The API might look a bit confusing at first, but you will soon appreciate that wiring together actors is usualy an asynchronous step that happens after the actor is created. The actor itself can just await its producers and consumers before the actual processing starts.
+`Producer<T>` decorates a `ChannelWriter<T>` with reference counting and lazy assignment. Use `Dispose` to properly close the channel. `TryComplete` will be called on the underlying `ChannelWriter<T>` when the reference count hits zero.
 
-A minimalistic producer actor:
-
-```c#
-
-class Actor : AbstractActor
-{
-    public IProducer<int> Outbox { get; } = new Producer<int>();
-
-    protected async Task ExecuteAsync(CancellationToken cancellationToken)
-    {
-        using var writer = await Outbox.GetWriterAsync(cancellationToken);
-        await writer.WriteAsync(42, cancellationToken);
-    }
-}
-
-```
-
-When the actor completes the ChannelWriter will be closed and thus signalling any linked consumers that there will be no more data flowing through the stream.
-
-## Consumer
-
-```c#
-
-Consumers consume messages.
-
-  public interface IConsumer<T>
-  {
-    Task<DisposableChannelReader<T>> GetReaderAsync(CancellationToken cancellationToken = default);
-  }
-
-```
-
-Consumers mirrors the producer API.
 
 ## LinkTo
 
@@ -97,8 +67,10 @@ LinkTo is the basic operation that connects a producer with a consumer.
     public IProducer<Hello> Outbox { get; } = new Producer<Hello>();
     protected async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-      using var writer = await Outbox.GetWriterAsync(cancellationToken);
-      await writer.WriteAsync(new Hello { Name = "World" }, cancellationToken);
+      using (Outbox)
+      {
+        await Outbox.WriteAsync(new Hello { Name = "World" }, cancellationToken);
+      }
     }
   }
 
@@ -107,9 +79,11 @@ LinkTo is the basic operation that connects a producer with a consumer.
     public IConsumer<Hello> Inbox { get; } = new Consumer<Hello>();
     protected async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-      using var reader = await Inbox.GetReaderAsync(cancellationToken);
-      await foreach (var hello in reader.ReadAllAsync(cancellationToken))
-        Console.WriteLine($"Hello, {hello.Name}!");
+      using (Inbox)
+      {
+        await foreach (var hello in Inbox.ReadAllAsync(cancellationToken))
+          Console.WriteLine($"Hello, {hello.Name}!");
+      }
     }
   }
 
