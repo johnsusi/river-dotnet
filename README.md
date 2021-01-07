@@ -17,8 +17,6 @@ An actor is the unit of concurrency.
 
 Much like a real actor on stage, an Actor can be started (Action!), cancelled (Cut!) and completed (That's a wrap!). Actors prepare, execute their role (behaviour) and communicate with other actors.
 
-```
-
 ## Producer
 
 Producers produce messages. The actual implementation is based on channels.
